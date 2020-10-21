@@ -1,0 +1,144 @@
+#!/bin/sh
+#IOS 2016/2017
+#Jozef Vanický
+#xvanic09
+POSIXLY_CORRECT=yes
+print () 
+{
+echo "Root directory: " $DIR
+echo Directories: $ND
+echo All files: $NF
+echo "File size histogram: $FSHIST" | cut -d'.' -f 1
+echo " <100 B $a"
+echo " <1 KiB $b"
+echo " <10 KiB $c"
+echo " <100 KiB $d"
+echo " <1 MiB $e"
+echo " <10 MiB $f"
+echo " <100 MiB $g"
+echo " <1 GiB $h"
+echo " >=1 GiB $x"
+echo "File type histogram: $FTHIST" | cut -d'.' -f 1
+}
+
+dir_depth() {
+
+  cd "$1"
+  for d in */.; 
+  do
+    [ -d "$d" ] || continue
+    depth=`dir_depth "$d"`
+  done
+}
+
+if [ $# -gt 3 ]; 
+    then
+    echo "Too many arguments" >&2
+    exit 1
+fi
+
+DIR=""
+if [ $# -gt 2 ];
+    then
+    DIR=$3
+
+    if [ $# == 2 ]; 
+        then
+        DIR=$(pwd)
+    fi
+
+    while getopts ":i:n" opt;
+    do      
+    case $opt in
+    i)
+        FILE_ERE=$OPTARG
+    ;;
+
+    n)
+    echo "Switch -n is not working yet !" >&2
+    exit 1
+    ;;
+    
+    *)
+    echo "Bad arguments !" >&2
+    exit 1
+    ;;
+
+    \? )
+    echo "Bad arguments !" >&2
+    exit 1
+    ;;
+
+    \* )
+    echo "Bad arguments !" >&2
+    exit 1
+    ;;
+
+    :)
+    echo "Bad arguments !" >&2
+    exit 1
+    ;;
+esac
+done
+
+((OPTARG--))
+a=' '
+b=' '
+c=' '
+d=' '
+e=' '
+f=' '
+g=' '
+h=' '
+x=' '
+
+shift $OPTIND
+    if [ ! -d "$DIR" ]; 
+        then
+        echo "Directory not found !" >&2 
+        exit 1
+    fi 
+    ND=$(find $DIR -type d | egrep -v $FILE_ERE | wc -l)
+    NF=$(find $DIR -type f | egrep -v $FILE_ERE | wc -l)
+    if [ $ND == 0 ]; then
+        echo "None of directories" >&2
+        exit 1
+    fi
+    DD=$(dir_depth "$DIR" | egrep -v $FILE_ERE)
+    a=$(find $DIR -type f -size -100c | awk '{ printf "#" }' )
+    b=$(find $DIR -type f -size +100c -size -1024c | awk '{ printf "#" }' )
+    c=$(find $DIR -type f -size +1024c -size -10240c | awk '{ printf "#" }' )
+    d=$(find $DIR -type f -size +10240c -size -102400c | awk '{ printf "#" }' )
+    e=$(find $DIR -type f -size +102400c -size -1048576c | awk '{ printf "#" }' )
+    f=$(find $DIR -type f -size +1048576c -size -10485760c | awk '{ printf "#" }' )
+    g=$(find $DIR -type f -size +10485760c -size -104857600c | awk '{ printf "#" }' )
+    h=$(find $DIR -type f -size +104857600c -size -1073741824c | awk '{ printf "#" }' )
+    x=$(find $DIR -type f -size +1073741823c | awk '{ printf "#" }' )
+    print
+
+else
+    DIR=$1
+    if [ $# == 0 ]; 
+        then
+        DIR=$(pwd)
+    fi
+
+    if [ ! -d "$DIR" ];
+        then
+        echo "Directory not found !"
+        exit 1
+    fi
+    ND=$(find $DIR -type d | wc -l)
+    NF=$(find $DIR -type f | wc -l)
+    DD=$(dir_depth "$DIR")
+    a=$(find $DIR -type f -size -100c | awk '{ printf "#" }' )
+    b=$(find $DIR -type f -size +100c -size -1024c | awk '{ printf "#" }' )
+    c=$(find $DIR -type f -size +1024c -size -10240c | awk '{ printf "#" }' )
+    d=$(find $DIR -type f -size +10240c -size -102400c | awk '{ printf "#" }' )
+    e=$(find $DIR -type f -size +102400c -size -1048576c | awk '{ printf "#" }' )
+    f=$(find $DIR -type f -size +1048576c -size -10485760c | awk '{ printf "#" }' )
+    g=$(find $DIR -type f -size +10485760c -size -104857600c | awk '{ printf "#" }' )
+    h=$(find $DIR -type f -size +104857600c -size -1073741824c | awk '{ printf "#" }' )
+    x=$(find $DIR -type f -size +1073741823c | awk '{ printf "#" }' )
+    print
+fi
